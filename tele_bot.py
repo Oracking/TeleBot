@@ -14,6 +14,7 @@ handlers = [
             CommandHandler('hostip', callbacks.get_host_ip),
             CommandHandler('updateanime', callbacks.update_anime, pass_args=True),
             CommandHandler('commands', callbacks.list_commands),
+            CommandHandler('shutdownserver', callbacks.shutdown_server),
            ]
 
 for handler in handlers:
