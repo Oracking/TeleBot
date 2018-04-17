@@ -1,0 +1,36 @@
+## How to run a script on startup in terminal
+
+# First open a terminal window when the pi starts up by changing this file:
+
+$ nano ~/.config/lxsession/LXDE-pi/autostart
+
+# Add the following to the end of the file:
+
+@lxterminal
+
+# Now terminal will open up on startup. Now navigate to /home/<user>/ which
+# will be /home/pi/ in the default case. Edit the .bashrc file to run some
+# commands every time a terminal window starts. Go to the end of the file and
+# add in the following:
+
+echo <your_password> | sudo -S
+
+# The above will run all commands as root
+
+/bin/sleep <some_seconds>
+
+# This will ensure that the network has enough time to connect before running
+# your scripts if they require internet connection. Note that this means any 
+# terminal you open will sleep for a while before becoming interactive. But
+# you can always skip this with CTRL + C
+
+# Now add your script
+
+python /path/to/your/script.py
+
+# The end of your .bashrc file should look like:
+
+echo <password> | sudo -S
+/bin/sleep 15
+python /path/to/your/script.py
+
