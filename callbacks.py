@@ -126,6 +126,18 @@ def startup_ip_address(bot, update):
                      parse_mode = telegram.ParseMode.MARKDOWN)
 
 
+# Has no route
+def startup_failed(bot, update):
+    chat_id = update.message.chat_id
+    ip = get_ip_address()
+    bot_message = "Attempted to start an instance of the back-end of this" \
+                  " bot on a device with IP: {0} but failed. Another" \
+                  " attempt will be made in the next 20 seconds".format(ip)
+    bot_message += BOT_SIGNATURE
+    bot.send_message(chat_id=chat_id, text=bot_message,
+                     parse_mode = telegram.ParseMode.MARKDOWN)
+
+
 def send_batch_anime_results(bot, chat_id, results_set, send_updates_only=True):
     for results in results_set:
        if results['success']:
@@ -176,22 +188,24 @@ def get_ip_address():
     return s.getsockname()[0]
 
 
-# if __name__ == '__main__':
-if True:
-    MY_CHAT_ID = "288757601"
-    BOT_TOKEN = "585202235:AAExMUAhLZllUHiIAqke8e71Bxr-pzEY5Kg"
-    UPDATE = {'message':{'chat_id': MY_CHAT_ID}}
-    bot = telegram.Bot(token=BOT_TOKEN)
+
+# Below are objects used to notify admin when server has started running
+MY_CHAT_ID = "288757601"
+BOT_TOKEN = "585202235:AAExMUAhLZllUHiIAqke8e71Bxr-pzEY5Kg"
+MY_UPDATE = {'message':{'chat_id': MY_CHAT_ID}}
+MY_BOT = telegram.Bot(token=BOT_TOKEN)
 
     # Test classes for creating update object
-    class Message():
-        def __init__(self, chat_id):
-            self.chat_id = chat_id
+class Message():
+    def __init__(self, chat_id):
+        self.chat_id = chat_id
 
-    class Update():
-        def __init__(self, chat_id):
-            self.message = Message(chat_id)
+class Update():
+    def __init__(self, chat_id):
+        self.message = Message(chat_id)
 
-    update = Update(MY_CHAT_ID)
-    startup_ip_address(bot, update)
+UPDATE_ME = Update(MY_CHAT_ID)
+
+if __name__ == '__main__':
+    startup_ip_address(MY_BOT, UPDATE_ME)
 

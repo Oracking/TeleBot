@@ -1,5 +1,6 @@
 from telegram.ext import Updater, CommandHandler
 import callbacks
+import time
 
 BOT_TOKEN = "585202235:AAExMUAhLZllUHiIAqke8e71Bxr-pzEY5Kg"
 
@@ -21,5 +22,14 @@ for handler in handlers:
     dispatcher.add_handler(handler)
 
 
+def begin_polling(updater):
+    try:
+        updater.start_polling()
+        callbacks.startup_ip_address(callbacks.MY_BOT, callbacks.MY_UPDATE)
+    except:
+        callbacks.startup_failed(callbacks.MY_BOT, callbacks.MY_UPDATE)
+        time.sleep(20)
+        begin_polling(updater)
+
 if __name__ == '__main__':
-    updater.start_polling()
+    begin_polling(updater)
