@@ -109,7 +109,7 @@ def shutdown_server(bot, update):
         bot_message += signature
         bot.send_message(chat_id=chat_id, text=bot_message,
                          parse_mode=telegram.ParseMode.MARKDOWN)
-        os.system('init0')
+        os.system('init 0')
     except Exception as e:
         print("The following exception occured when shutdown command was invoked")
         print(e)
