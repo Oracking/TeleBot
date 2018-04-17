@@ -192,7 +192,6 @@ def get_ip_address():
 # Below are objects used to notify admin when server has started running
 MY_CHAT_ID = "288757601"
 BOT_TOKEN = "585202235:AAExMUAhLZllUHiIAqke8e71Bxr-pzEY5Kg"
-MY_UPDATE = {'message':{'chat_id': MY_CHAT_ID}}
 MY_BOT = telegram.Bot(token=BOT_TOKEN)
 
     # Test classes for creating update object
@@ -204,8 +203,8 @@ class Update():
     def __init__(self, chat_id):
         self.message = Message(chat_id)
 
-UPDATE_ME = Update(MY_CHAT_ID)
+MY_UPDATE = Update(MY_CHAT_ID)
 
 if __name__ == '__main__':
-    startup_ip_address(MY_BOT, UPDATE_ME)
+    startup_ip_address(MY_BOT, MY_UPDATE)
 
