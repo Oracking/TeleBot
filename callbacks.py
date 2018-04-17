@@ -102,12 +102,17 @@ def get_host_ip(bot, update):
 
 #route: /shutdownserver
 def shutdown_server(bot, update):
-    chat_id = update.message.chat_id
-    bot_message = "Server is shutting down :(\n Bye-bye"
-    signature = "\n\n ~$ Microchip Out"
-    bot_message += signature
-    update.reply_text(bot_message)
-    os.system('init0')
+    try:
+        chat_id = update.message.chat_id
+        bot_message = "Server is shutting down :(\n Bye-bye"
+        signature = "\n\n ~$ Microchip Out"
+        bot_message += signature
+        bot.send_message(chat_id=chat_id, text=bot_message,
+                         parse_mode=telegram.ParseMode.MARKDOWN)
+        os.system('init0')
+    except Exception as e:
+        print("The following exception occured when shutdown command was invoked")
+        print(e)
 
 
 # Has no route
