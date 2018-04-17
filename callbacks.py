@@ -100,6 +100,9 @@ def get_host_ip(bot, update):
     bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
+def startup_pi_address(bot, update):
+
+
 def send_batch_anime_results(bot, chat_id, results_set, send_updates_only=True):
     for results in results_set:
        if results['success']:
@@ -166,5 +169,5 @@ if __name__ == '__main__':
             self.message = Message(chat_id)
 
     update = Update(MY_CHAT_ID)
-    update_anime(bot, update, 4)
+    get_ip(bot, update, 4)
 
