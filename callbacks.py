@@ -4,7 +4,7 @@ from utils import fetch_anime_db, update_anime_db
 
 # Imports for getting device IP address
 import socket
-
+import subprocess
 
 # You can use bot.get_me() to verify bot.
 # To get the chat_id send a message to your bot and use the code below:
@@ -100,6 +100,17 @@ def get_host_ip(bot, update):
     bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
+#route: /shutdownserver
+def shutdown_server(bot, update):
+    chat_id = update.message.chat_id
+    bot_message = "Server is shutting down :(\n Bye-bye"
+    signature = "\n\n ~$ Microchip Out"
+    bot_message += signature
+    update.reply_text(bot_message)
+    subprocess.call(['sudo', 'shutdown', '-h', 'now'])
+
+
+# Has no route
 def startup_ip_address(bot, update):
     chat_id = update.message.chat_id
     ip = get_ip_address()
