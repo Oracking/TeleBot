@@ -100,7 +100,14 @@ def get_host_ip(bot, update):
     bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
-def startup_pi_address(bot, update):
+def startup_ip_address(bot, update):
+    chat_id = update.message.chat_id
+    ip = get_ip_address()
+    bot_message = "An instance of the back-end of this bot has been" \
+                  " started on a device with IP: {0}".format(ip)
+    bot_message += BOT_SIGNATURE
+    bot.send_message(chat_id=chat_id, text=bot_message,
+                     parse_mode = telegram.ParseMode.MARKDOWN)
 
 
 def send_batch_anime_results(bot, chat_id, results_set, send_updates_only=True):
@@ -153,7 +160,8 @@ def get_ip_address():
     return s.getsockname()[0]
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
+if True:
     MY_CHAT_ID = "288757601"
     BOT_TOKEN = "585202235:AAExMUAhLZllUHiIAqke8e71Bxr-pzEY5Kg"
     UPDATE = {'message':{'chat_id': MY_CHAT_ID}}
@@ -169,5 +177,5 @@ if __name__ == '__main__':
             self.message = Message(chat_id)
 
     update = Update(MY_CHAT_ID)
-    get_ip(bot, update, 4)
+    startup_ip_address(bot, update)
 
