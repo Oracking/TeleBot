@@ -4,7 +4,7 @@ from utils import fetch_anime_db, update_anime_db
 
 # Imports for getting device IP address
 import socket
-import subprocess
+import os
 
 # You can use bot.get_me() to verify bot.
 # To get the chat_id send a message to your bot and use the code below:
@@ -107,7 +107,7 @@ def shutdown_server(bot, update):
     signature = "\n\n ~$ Microchip Out"
     bot_message += signature
     update.reply_text(bot_message)
-    subprocess.call(['sudo', 'shutdown', '-h', 'now'])
+    os.system('init0')
 
 
 # Has no route
