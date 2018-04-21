@@ -1,0 +1,4 @@
+partnerships: Sharing data between companies
+problem-solving: finding the part of the business that will benefit
+prominence: quality of data
+presentation: visualizing data

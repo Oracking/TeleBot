@@ -1,210 +1,196 @@
-import telegram
-import anime_scraper as scraper
-from utils import fetch_anime_db, update_anime_db
-
-# Imports for getting device IP address
-import socket
-import os
-
-# You can use bot.get_me() to verify bot.
-# To get the chat_id send a message to your bot and use the code below:
-# chat_id = bot.get_updates()[-1].message.chat_id
-
-BOT_SIGNATURE = "\n\n ~$ _Microchip at your service_"
-
-
-## Callback Functions and Utils Functions for Bot
-
-
-# route: /commands
-def list_commands(bot, update):
-    chat_id = update.message.chat_id
-    bot_message = "/start \n/updateallanime \n/updateanime anime_no \n/myanimelist \n/hostip \n/commands"
-    bot.send_message(chat_id=chat_id, text=bot_message)
+from telegram.ext import ConversationHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
+import gogo_scraper
+import db_utils
 
 
 # route: /start
 def start(bot, update):
     chat_id = update.message.chat_id
-    bot_message = "Hi, I'm Microchip\nI bring you your live anime updates :)"
-    bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=telegram.ParseMode.MARKDOWN)
+    db_utils.create_user(chat_id=chat_id)
+    update.message.reply_text("Hi, I'm microchip. What should I call you?")
+    return 1
+
+
+# Conversational Route
+# Conversational Handler Path: start -> create_user -> exit
+def nickname_user(bot, update):
+    chat_id = update.message.chat_id
+    nickname = update.message.text
+    success, _ = db_utils.nickname_user(chat_id, nickname)
+    if success:
+        update.message.reply_text("Nice meeting you, {0}".format(nickname))
+        update.message.reply_text("I'm guessing you watch anime. I can help you keep updated on the anime"
+                                  " you watch.")
+        update.message.reply_text("Use the command /addanime to search for an anime to add to my database.")
+        return ConversationHandler.END
+    else:
+        update.message.reply_text("I'm having trouble remembering that. Please choose something shorter")
+        return 1
+
+
+# route: /cancel
+def cancel(bot, update):
+    update.message.reply_text("Your operation has been cancelled")
+    return ConversationHandler.END
+
+
+# Routed by dispatcher error message
+def error(bot, udpate, error):
+    print(error)
+
+
+# route: /addanime
+# Conversational Handler Path: add_anime -> search_anime -> exit
+def add_anime(bot, update):
+    update.message.reply_text("Great! What anime would you like to add?")
+    return 1
+
+
+# Conversational Route
+# Conversational Handler Path: add_anime -> search_anime -> exit
+def search_anime(bot, update):
+    anime_name = update.message.text
+    chat_id = update.message.chat_id
+    update.message.reply_text("Let me check the books 📖")
+    matches = gogo_scraper.search_for_anime(anime_name=anime_name)
+    buttons = []
+
+    if len(matches) == 0:
+        bot.send_message(chat_id=chat_id, text="Hmm 🤔, I didn't seem to find any anime like that." 
+                                               " You can try searching with a different name",
+        )
+        return 1
+
+    for index, match in enumerate(matches):
+        name, _ = match
+        button = InlineKeyboardButton(text=name, callback_data='addanimetodb|||{0}'.format(index))
+        buttons.append([button])
+
+    reply_markup = InlineKeyboardMarkup(buttons)
+    bot.send_message(chat_id=chat_id, text='Here is a list of anime that match: *{0}*'.format(anime_name),
+                     reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
+    update.message.reply_text('Tap on the one that matches what you were looking for')
+    return ConversationHandler.END
+
+
+# route: /updateanime
+def update_anime(bot, update):
+    chat_id = update.message.chat_id
+    #update.message.reply_text('Let me pull up your anime list')
+    bot.send_message(chat_id=chat_id, text='Let me pull up your anime list')
+    anime_set = db_utils.get_all_anime(chat_id)
+    buttons = []
+    for anime_info in anime_set:
+        name, id, _, _ = anime_info
+        button = InlineKeyboardButton(text=name, callback_data="updateanime|||{0}".format(id))
+        buttons.append([button])
+    reply_markup = InlineKeyboardMarkup(buttons)
+    bot.send_message(chat_id=chat_id, text="Here are the anime you are following", reply_markup=reply_markup)
+    #update.message.reply_text('Tap the one you want to update')
+    bot.send_message(chat_id=chat_id, text='Tap the one you want to update')
+
+
+# route: /myanime
+def get_anime_list(bot, update):
+    chat_id = update.message.chat_id
+    anime_list = db_utils.get_all_anime(chat_id)
+    bot_message = "Your Anime List\n\n"
+    for index, anime_info in enumerate(anime_list):
+
+        # anime_info = (anime_name, id, last_episode, episodes_url)
+        name, _, last_episode, _ = anime_info
+        bot_message += "*{0}*. {1} ({2})\n".format(index + 1, name, last_episode)
+    bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=ParseMode.MARKDOWN)
 
 
 # route: /updateallanime
 def update_all_anime(bot, update):
     chat_id = update.message.chat_id
-    bot.send_message(chat_id=chat_id, text='Updating your Database', parse_mode=telegram.ParseMode.MARKDOWN)
-    anime_list = fetch_anime_db()
-    updated_list = []
-    results_set = []
-    # Use -1 so code actually breaks
-    default_id = -1
-    for anime_info in anime_list:
-        name, _ = tuple(anime_info)
-        results = update_anime(bot, update, default_id, anime_info=anime_info, auto_reply=False)
-        recent_episode = results['body'][1]
-        updated_list.append([name, recent_episode])
-        results_set.append(results)
+    update.message.reply_text('Updating all the anime you watch. This might take a while.')
+    anime_set = db_utils.get_all_anime(chat_id)
+    batch_results = []
+    for anime_info in anime_set:
+        # anime_info = (anime_name, id, last_episode, episodes_url)
+        episode_updates = gogo_scraper.get_episode_updates(anime_info[3], anime_info[2])
+        new_eps, recent_ep, last_ep = episode_updates
+        batch_results.append((anime_info[0], new_eps, recent_ep, last_ep))
 
-    update_anime_db(updated_list)
-    send_batch_anime_results(bot, chat_id, results_set)
-    bot.send_message(chat_id=chat_id, text='Your anime database is up to date :)',
-                     parse_mode=telegram.ParseMode.MARKDOWN)
+    send_batch_update_messages(bot, chat_id, batch_results, send_changes_only=True)
+    update.message.reply_text("Done updating. If nothing showed then you are up to date.")
 
 
-# route: /updateanime
-def update_anime(bot, update, args, anime_info=None, auto_reply=True):
-    chat_id = update.message.chat_id
-    if anime_info:
-        name, last_episode = tuple(anime_info)
-    else:
-        anime_id = int(args[0])
-        all_anime = fetch_anime_db()
-        try:
-            anime_info = all_anime[anime_id-1]
-        except Exception as e:
-            print(e)
-            bot.send_message(chat_id=chat_id, text='You entered an invalid option. Type: \n\n/myanimelist' \
-            '\n\nto see a list of anime and their numbers. Then use: \n\n/updateanime <the_anime_number>')
-            return None
-        name, last_episode = tuple(anime_info)
-    if auto_reply:
-        update_message = 'Updating *{0}*'.format(name)
-    bot.send_message(chat_id=chat_id, text=update_message,
-                     parse_mode = telegram.ParseMode.MARKDOWN)
-    results = scraper.get_episode_updates(name, last_episode)
-    if auto_reply:
-        results_set = [results]
-        send_batch_anime_results(bot, chat_id, results_set, send_updates_only=False)
-    return results
 
+# Main CallBack Route
+def callback_query_handler(bot, update):
 
-# route: /myanimelist
-def get_anime_list(bot, update):
-    chat_id = update.message.chat_id
-    anime_list = fetch_anime_db()
-    bot_message = "Your Anime List\n\n"
-    for index, anime_info in enumerate(anime_list):
-        name, last_episode = tuple(anime_info)
-        bot_message += "*{0}*. {1} ({2})\n".format(index+1, name, last_episode)
-    bot_message += BOT_SIGNATURE
-    bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=telegram.ParseMode.MARKDOWN)
+    #General variables used by all routes
+    chat_id = update.callback_query.message.chat.id
+    callback_data = update.callback_query.data
+    redirect_route, user_choice = tuple(callback_data.split('|||'))
+    user_choice = int(user_choice)
 
+    # These variables are only used for addanimetodb route
+    prev_message = update.callback_query.message.text
+    start_of_user_query = len("Here is a list of anime that match: ")
+    user_query = prev_message[start_of_user_query:]
 
-# route: /hostip
-def get_host_ip(bot, update):
-    chat_id = update.message.chat_id
-    ip = get_ip_address()
-    bot_message = "The back-end of this bot is running on: {0}".format(ip)
-    bot_message += BOT_SIGNATURE
-    bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=telegram.ParseMode.MARKDOWN)
+    # Handle the addition of an anime to a user's watch list
+    if redirect_route == 'addanimetodb':
+        matches = gogo_scraper.search_for_anime(user_query)
+        anime_name, main_page_link = matches[user_choice]
 
+        if db_utils.user_is_subscribed(chat_id, anime_name):
+            bot.send_message(chat_id=chat_id, text="Great news. Looks like *{0}* is already part of the "
+                                                   "list of animes you are following".format(anime_name),
+                             parse_mode = ParseMode.MARKDOWN)
 
-#route: /shutdownserver
-def shutdown_server(bot, update):
-    try:
-        chat_id = update.message.chat_id
-        bot_message = "Server is shutting down :(\n Bye-bye"
-        signature = "\n\n ~$ Microchip Out"
-        bot_message += signature
-        bot.send_message(chat_id=chat_id, text=bot_message,
-                         parse_mode=telegram.ParseMode.MARKDOWN)
-        os.system('init 0')
-    except Exception as e:
-        print("The following exception occured when shutdown command was invoked")
-        print(e)
+        elif db_utils.anime_in_db(chat_id, anime_name):
+            db_utils.subscribe_user_to_anime(chat_id, anime_name)
 
-
-# Has no route
-def startup_ip_address(bot, update):
-    chat_id = update.message.chat_id
-    ip = get_ip_address()
-    bot_message = "An instance of the back-end of this bot has been" \
-                  " started on a device with IP: {0}".format(ip)
-    bot_message += BOT_SIGNATURE
-    bot.send_message(chat_id=chat_id, text=bot_message,
-                     parse_mode = telegram.ParseMode.MARKDOWN)
-
-
-# Has no route
-def startup_failed(bot, update):
-    chat_id = update.message.chat_id
-    ip = get_ip_address()
-    bot_message = "Attempted to start an instance of the back-end of this" \
-                  " bot on a device with IP: {0} but failed. Another" \
-                  " attempt will be made in the next 20 seconds".format(ip)
-    bot_message += BOT_SIGNATURE
-    bot.send_message(chat_id=chat_id, text=bot_message,
-                     parse_mode = telegram.ParseMode.MARKDOWN)
-
-
-def send_batch_anime_results(bot, chat_id, results_set, send_updates_only=True):
-    for results in results_set:
-       if results['success']:
-            # If it should send updates only and there are no new episodes
-            # then it should pass
-           if send_updates_only and results['body'][0] == 0:
-               pass
-           else:
-               bot_message = construct_anime_update_message(results)
-               bot.send_message(chat_id = chat_id, text=bot_message,
-                                parse_mode = telegram.ParseMode.MARKDOWN)
-       else:
-           bot_message = construct_anime_update_message(results)
-           bot.send_message(chat_id = chat_id, text=bot_message,
-                            parse_mode = telegram.ParseMode.MARKDOWN)
-
-
-def construct_anime_update_message(scraping_results):
-    name = scraping_results['anime_name']
-    results = scraping_results
-    bot_signature = "\n\n ~$ _Microchip at your service_"
-    if results['success']:
-        new_eps, recent_ep, last_ep = tuple(results['body'])
-        if new_eps == 0:
-            bot_message = "Hi there,\n\n There have been no new updates to" \
-                          " the anime: *{0}* \n\n The last episode you" \
-                          " watched was Episode {1} and the most recent" \
-                          " episode is Episode {2}".format(name, last_ep, recent_ep)
         else:
-            bot_message = "Hi there,\n\nThere have been updates to an anime" \
-                          " you watch:\n\n*{0}* \n\nThe last episode you watched" \
-                          " was Episode {1}. There have been {2} more episode(s) since" \
-                          " you last got updated and the most recent episode is" \
-                          " Episode {3}".format(name, last_ep, new_eps, recent_ep)
-    else:
-        error_message = results['message']
-        bot_message = "Error while updating anime database:\n\n" + error_message
-    bot_message = bot_message + bot_signature
-    return bot_message
+            episodes_list_url = gogo_scraper.get_episode_list_url(main_page_link)
+            _, last_episode, _ = gogo_scraper.get_episode_updates(episodes_list_url)
+            db_utils.add_new_anime(chat_id=chat_id, anime_name=anime_name, episodes_list_url=episodes_list_url,
+                                   last_episode=last_episode)
+
+            bot.send_message(chat_id=chat_id, text="Alright! *{0}* has been successfully added to my database."
+                             " I will notify you when new episodes are released.".format(anime_name),
+                             parse_mode=ParseMode.MARKDOWN)
+            bot.send_message(chat_id=chat_id, text="Note: You can use /updateanime to manually check for"
+                             " updates or the current episode that's out.")
+
+    # Handle the manual updating of one of the user's animes
+    if redirect_route == "updateanime":
+        anime_id = user_choice
+        anime = db_utils.get_anime_by_id(chat_id, anime_id)
+        bot.send_message(chat_id=chat_id, text='Alright, updating *{0}*'.format(anime.name),
+                         parse_mode = ParseMode.MARKDOWN)
+        if anime:
+            episodes_list_url, last_episode = (anime.episodes_url, anime.last_episode)
+            episode_updates = gogo_scraper.get_episode_updates(episodes_list_url, last_episode)
+            new_eps, recent_ep, last_ep = episode_updates
+            send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)])
 
 
-# Function for getting IP address:
-# Source: https://stackoverflow.com/questions/24196932/how-can-i-get-the-ip-address-of-eth0-in-python
-# Answer by: jeremyjjbrown
-def get_ip_address():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    return s.getsockname()[0]
+def send_batch_update_messages(bot, chat_id, scraping_results_batch, send_changes_only=False):
+    for scraping_results in scraping_results_batch:
+        # scraping_results = (anime_name, num_new_eps, recent_episode, last_ep)
+        if scraping_results[1] == 0:
+            bot_message = "The most recent episode of *{0}* is Episode {1}. There have been no new episodes" \
+                          " since I last checked".format(scraping_results[0], scraping_results[2])
+        else:
+            if scraping_results[1] == 1:
+                episode = 'episode'
+            else:
+                episode = 'episodes'
+            bot_message = "Good news! There have been updates to *{0}*.\n\n Since I last checked, there have been" \
+                          " {1} more {2}. The most recent episode is Episode {3}".format(scraping_results[0],
+                                                                                         scraping_results[1],
+                                                                                         episode,
+                                                                                         scraping_results[2])
 
-
-
-# Below are objects used to notify admin when server has started running
-MY_CHAT_ID = "288757601"
-BOT_TOKEN = "585202235:AAExMUAhLZllUHiIAqke8e71Bxr-pzEY5Kg"
-MY_BOT = telegram.Bot(token=BOT_TOKEN)
-
-    # Test classes for creating update object
-class Message():
-    def __init__(self, chat_id):
-        self.chat_id = chat_id
-
-class Update():
-    def __init__(self, chat_id):
-        self.message = Message(chat_id)
-
-MY_UPDATE = Update(MY_CHAT_ID)
-
-if __name__ == '__main__':
-    startup_ip_address(MY_BOT, MY_UPDATE)
-
+        if send_changes_only and scraping_results[1] == 0:
+            pass
+        else:
+            bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=ParseMode.MARKDOWN)

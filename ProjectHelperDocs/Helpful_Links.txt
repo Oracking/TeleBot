@@ -1,0 +1,10 @@
+## Creating inline keyboard with telegram bot
+https://github.com/eternnoir/pyTelegramBotAPI
+https://github.com/python-telegram-bot/python-telegram-bot/wiki/Code-snippets#custom-keyboards  ***
+https://github.com/python-telegram-bot/python-telegram-bot/tree/master/examples
+https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/inlinekeyboard.py  *****
+https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/conversationbot.py
+https://github.com/python-telegram-bot/python-telegram-bot/wiki/Extensions-%E2%80%93-JobQueue
+
+## Timed Reboot
+https://askubuntu.com/questions/438576/shut-down-linux-server-and-turn-on-automatically-at-specific-time
