@@ -79,6 +79,16 @@ def get_anime_by_id(chat_id, anime_id):
         return None
 
 
+def get_anime_subscriber_bundle():
+    animes = Anime.select()
+    bundle = {}
+    for anime in animes:
+        bundle[anime.name] = [anime, []]
+        users = anime.users
+        for user in users:
+            bundle[anime.name][1].append(user.chat_id)
+    return bundle
+
 
 if __name__ == '__main__':
     pass

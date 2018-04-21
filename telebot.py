@@ -20,9 +20,10 @@ handlers = [
             ),
 
             ConversationHandler(
-                entry_points=[CommandHandler('addanime', callbacks.add_anime)],
+                entry_points=[CommandHandler('addanime', callbacks.add_anime),
+                              CommandHandler('research', callbacks.research)],
                 states={
-                    1: [MessageHandler(Filters.text, callbacks.search_anime)]
+                    1: [MessageHandler(Filters.text, callbacks.search_anime)],
                 },
                 fallbacks=[CommandHandler('cancel', callbacks.cancel)]
             ),
@@ -58,6 +59,11 @@ for handler in handlers:
     dispatcher.add_handler(handler)
 
 dispatcher.add_error_handler(callbacks.error)
+
+# Add automatic updating of users after every 3 hours
+INTERVAL =  3 * 3600
+job_queue = updater.job_queue
+job_queue.run_repeating(callbacks.auto_update_user, interval=INTERVAL, first=0)
 
 if __name__ == '__main__':
     initiated = False

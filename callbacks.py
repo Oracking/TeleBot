@@ -47,6 +47,10 @@ def add_anime(bot, update):
     return 1
 
 
+def research(bot, update):
+    update.message.reply_text("Cool. What is the name of the anime?")
+    return 1
+
 # Conversational Route
 # Conversational Handler Path: add_anime -> search_anime -> end
 def search_anime(bot, update):
@@ -70,7 +74,8 @@ def search_anime(bot, update):
     reply_markup = InlineKeyboardMarkup(buttons)
     bot.send_message(chat_id=chat_id, text='Here is a list of anime that match: *{0}*'.format(anime_name),
                      reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
-    update.message.reply_text('Tap on the one that matches what you were looking for')
+    update.message.reply_text("Tap on the one that matches what you were looking for. Use /research if your"
+                              " anime did not show up.")
     return ConversationHandler.END
 
 
@@ -120,10 +125,21 @@ def update_all_anime(bot, update):
     update.message.reply_text("Done updating. If nothing showed then you are up to date.")
 
 
+def auto_update_user(bot, job):
+    bundle = db_utils.get_anime_subscriber_bundle()
+    batch_results = []
+    for anime in bundle.keys():
+        anime, related_chat_ids = tuple(bundle[anime])
+        results = gogo_scraper.get_episode_updates(anime.episodes_url, anime.last_episode)
+        new_eps, recent_ep, last_ep = results
+        anime.last_episode = recent_ep
+        anime.save()
+        for chat_id in related_chat_ids:
+            send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)], send_changes_only=True)
+
 
 # Main CallBack Route
 def callback_query_handler(bot, update):
-
     #General variables used by all routes
     chat_id = update.callback_query.message.chat.id
     callback_data = update.callback_query.data
@@ -164,13 +180,18 @@ def callback_query_handler(bot, update):
     if redirect_route == "updateanime":
         anime_id = user_choice
         anime = db_utils.get_anime_by_id(chat_id, anime_id)
-        bot.send_message(chat_id=chat_id, text='Alright, updating *{0}*'.format(anime.name),
-                         parse_mode = ParseMode.MARKDOWN)
+
         if anime:
+            bot.send_message(chat_id=chat_id, text='Alright, updating *{0}*'.format(anime.name),
+                             parse_mode=ParseMode.MARKDOWN)
             episodes_list_url, last_episode = (anime.episodes_url, anime.last_episode)
             episode_updates = gogo_scraper.get_episode_updates(episodes_list_url, last_episode)
             new_eps, recent_ep, last_ep = episode_updates
+            anime.last_episode = recent_ep
+            anime.save()
             send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)])
+
+    return ConversationHandler.END
 
 
 def send_batch_update_messages(bot, chat_id, scraping_results_batch, send_changes_only=False):
