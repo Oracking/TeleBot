@@ -13,7 +13,7 @@ def start(bot, update):
 
 
 # Conversational Route
-# Conversational Handler Path: start -> create_user -> exit
+# Conversational Handler Path: start -> nickname_user -> end
 def nickname_user(bot, update):
     chat_id = update.message.chat_id
     nickname = update.message.text
@@ -41,14 +41,14 @@ def error(bot, udpate, error):
 
 
 # route: /addanime
-# Conversational Handler Path: add_anime -> search_anime -> exit
+# Conversational Handler Path: add_anime -> search_anime -> end
 def add_anime(bot, update):
     update.message.reply_text("Great! What anime would you like to add?")
     return 1
 
 
 # Conversational Route
-# Conversational Handler Path: add_anime -> search_anime -> exit
+# Conversational Handler Path: add_anime -> search_anime -> end
 def search_anime(bot, update):
     anime_name = update.message.text
     chat_id = update.message.chat_id

@@ -12,6 +12,7 @@ def get_ip_address():
 
 
 # route: /hostip
+# Conversational Handler Path: get_host_ip -> deliver_host_ip -> end
 def get_host_ip(bot, update):
     chat_id = update.message.chat_id
     update.message.reply_text("That's a strong request. I am going to have to ask you who you are")
@@ -32,12 +33,14 @@ def deliver_host_ip(bot, update):
     return ConversationHandler.END
 
 
+# route: /shutdownserver
 def shutdown_declaration(bot, update):
     update.message.reply_text("That's a very strong request. Who are you?")
     return 1
 
 
-#route: /shutdownserver
+# Conversational Route
+# Conversational Handler Path: shutdown_declaration -> shutdown_server -> end
 def shutdown_server(bot, update):
     if update.message.text == AUTHORIZATION_TOKEN:
         chat_id = update.message.chat_id
