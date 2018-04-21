@@ -10,6 +10,7 @@ updater = Updater(token=BOT_TOKEN)
 dispatcher = updater.dispatcher
 
 
+# Application Handlers
 handlers = [
             ConversationHandler(
                 entry_points=[CommandHandler('start', callbacks.start)],
@@ -36,6 +37,7 @@ handlers = [
             ]
 
 
+# Special server callback handlers
 handlers += [
             ConversationHandler(
                 entry_points=[CommandHandler('hostip', server_callbacks.get_host_ip)],
