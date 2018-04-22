@@ -34,6 +34,7 @@ handlers = [
             CommandHandler('updateanime', callbacks.update_anime),
             CommandHandler('myanime', callbacks.get_anime_list),
             CommandHandler('updateallanime', callbacks.update_all_anime),
+            CommandHandler('cancel', callbacks.cancel),
             ]
 
 
