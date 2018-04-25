@@ -223,7 +223,7 @@ def callback_query_handler(bot, update):
     # Handle the removal of the anime from a user's anime list
     if redirect_route == 'removeanime':
         anime = db_utils.get_anime_by_id(chat_id, user_choice)
-        db_utils.unsubscribe_user_from_anime(chat_id, anime.get_id())
+        db_utils.unsubscribe_user_from_anime(chat_id, anime.name)
         bot.send_message(chat_id=chat_id, text="Done")
 
 
