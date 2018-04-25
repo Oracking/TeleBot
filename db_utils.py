@@ -57,8 +57,8 @@ def unsubscribe_user_from_anime(chat_id, anime_name):
     if user_is_subscribed(chat_id, anime_name):
         anime = Anime.get(name=anime_name)
         user = User.get(chat_id=chat_id)
-        user.animes.remove(anime)
         try:
+            user.animes.remove(anime)
             anime.users.remove(anime)
         except:
             pass
