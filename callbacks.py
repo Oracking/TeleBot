@@ -217,7 +217,7 @@ def callback_query_handler(bot, update):
         reply_markup = InlineKeyboardMarkup(buttons)
         bot.send_message(chat_id=chat_id, text="Are you sure you want to remove *{0}* from your"
                                                " anime list?".format(anime.name),
-                         reply_markup=reply_markup)
+                         reply_markup=reply_markup, parse_mode = ParseMode.MARKDOWN)
 
 
     # Handle the removal of the anime from a user's anime list

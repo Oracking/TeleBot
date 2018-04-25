@@ -57,8 +57,13 @@ def unsubscribe_user_from_anime(chat_id, anime_name):
     if user_is_subscribed(chat_id, anime_name):
         anime = Anime.get(name=anime_name)
         user = User.get(chat_id=chat_id)
-        anime.users.remove(user)
+        user.animes.remove(anime)
+        try:
+            anime.users.remove(anime)
+        except:
+            pass
         anime.save()
+        user.save()
 
 
 def add_new_anime(chat_id, anime_name, episodes_list_url, last_episode):
