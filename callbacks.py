@@ -212,8 +212,8 @@ def callback_query_handler(bot, update):
     #Handle the confirmation of the removal of an anime from user database
     if redirect_route == 'confirmremoval':
         anime = db_utils.get_anime_by_id(chat_id, user_choice)
-        buttons = [InlineKeyboardButton(text="Yes", callback_data="removeanime|||{0}".format(user_choice)),
-                   InlineKeyboardButton(text="No", callback_data="cancel|||{0}".format(user_choice))]
+        buttons = [[InlineKeyboardButton(text="Yes", callback_data="removeanime|||{0}".format(user_choice)),
+                   InlineKeyboardButton(text="No", callback_data="cancel|||{0}".format(user_choice))]]
         reply_markup = InlineKeyboardMarkup(buttons)
         bot.send_message(chat_id=chat_id, text="Are you sure you want to remove *{0}* from your"
                                                " anime list?".format(anime.name),
