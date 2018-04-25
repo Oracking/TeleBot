@@ -51,6 +51,7 @@ def research(bot, update):
     update.message.reply_text("Cool. What is the name of the anime?")
     return 1
 
+
 # Conversational Route
 # Conversational Handler Path: add_anime -> search_anime -> end
 def search_anime(bot, update):
@@ -77,6 +78,21 @@ def search_anime(bot, update):
     update.message.reply_text("Tap on the one that matches what you were looking for. Use /research if your"
                               " anime did not show up.")
     return ConversationHandler.END
+
+
+# route: /removeanime
+def remove_anime(bot, update):
+    update.message.reply_text("Hold on. Let me get your anime list")
+    chat_id = update.message.chat_id
+    anime_set = db_utils.get_all_anime(chat_id)
+    buttons = []
+    for anime_info in anime_set:
+        name, id, _, _ = anime_info
+        button = InlineKeyboardButton(text=name, callback_data="confirmremoval|||{0}".format(id))
+        buttons.append([button])
+    reply_markup = InlineKeyboardMarkup(buttons)
+    bot.send_message(chat_id=chat_id, text="Here are the anime you are following", reply_markup=reply_markup)
+    bot.send_message(chat_id=chat_id, text="Tap on the one that you want to remove.")
 
 
 # route: /updateanime
@@ -159,7 +175,7 @@ def callback_query_handler(bot, update):
         if db_utils.user_is_subscribed(chat_id, anime_name):
             bot.send_message(chat_id=chat_id, text="Great news. Looks like *{0}* is already part of the "
                                                    "list of animes you are following".format(anime_name),
-                             parse_mode = ParseMode.MARKDOWN)
+                             parse_mode=ParseMode.MARKDOWN)
 
         elif db_utils.anime_in_db(chat_id, anime_name):
             db_utils.subscribe_user_to_anime(chat_id, anime_name)
@@ -176,6 +192,7 @@ def callback_query_handler(bot, update):
             bot.send_message(chat_id=chat_id, text="Note: You can use /updateanime to manually check for"
                              " updates or the current episode that's out.")
 
+
     # Handle the manual updating of one of the user's animes
     if redirect_route == "updateanime":
         anime_id = user_choice
@@ -190,6 +207,30 @@ def callback_query_handler(bot, update):
             anime.last_episode = recent_ep
             anime.save()
             send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)])
+
+
+    #Handle the confirmation of the removal of an anime from user database
+    if redirect_route == 'confirmremoval':
+        anime = db_utils.get_anime_by_id(chat_id, user_choice)
+        buttons = [InlineKeyboardButton(text="Yes", callback_data="removeanime|||{0}".format(user_choice)),
+                   InlineKeyboardButton(text="No", callback_data="cancel|||{0}".format(user_choice))]
+        reply_markup = InlineKeyboardMarkup(buttons)
+        bot.send_message(chat_id=chat_id, text="Are you sure you want to remove *{0}* from your"
+                                               " anime list?".format(anime.name),
+                         reply_markup=reply_markup)
+
+
+    # Handle the removal of the anime from a user's anime list
+    if redirect_route == 'removeanime':
+        anime = db_utils.get_anime_by_id(chat_id, user_choice)
+        db_utils.unsubscribe_user_from_anime(chat_id, anime.get_id())
+        bot.send_message(chat_id=chat_id, text="Done")
+
+
+    # Handle the cancellation of a callback query
+    if redirect_route == 'cancel':
+        bot.send_message(chat_id=chat_id, text="Your operation has been cancelled")
+
 
     return ConversationHandler.END
 
