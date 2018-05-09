@@ -4,11 +4,11 @@ import callbacks
 import server_callbacks
 from Authorizations import BOT_TOKEN, MY_BOT, MY_UPDATE
 import time
-import logging
+# import logging
 
 # To allow logging of errors
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# logging.basicConfig(level=logging.DEBUG,
+#                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 updater = Updater(token=BOT_TOKEN)
 dispatcher = updater.dispatcher
