@@ -3,12 +3,12 @@ from bs4 import BeautifulSoup
 
 session = requests.Session()
 
-BASE_URL = "https://www1.gogoanime.se/"
-BASE_SEARCH_URL = "https://www1.gogoanime.se/search.html?keyword="
+BASE_URL = "https://www.gogoanime.se/"
+BASE_SEARCH_URL = "https://www.gogoanime.se/search.html?keyword="
 DEFAULT_EP = '0'
 EP_START = '0'
 EP_END = '5000'
-EPISODES_LIST_BASE_URL = "https://www1.gogoanime.se/load-list-episode?"
+EPISODES_LIST_BASE_URL = "https://www.gogoanime.se/load-list-episode?"
 
 
 def search_for_anime(anime_name):

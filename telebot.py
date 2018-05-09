@@ -4,7 +4,11 @@ import callbacks
 import server_callbacks
 from Authorizations import BOT_TOKEN, MY_BOT, MY_UPDATE
 import time
+import logging
 
+# To allow logging of errors
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 updater = Updater(token=BOT_TOKEN)
 dispatcher = updater.dispatcher
@@ -24,17 +28,32 @@ handlers = [
                 entry_points=[CommandHandler('addanime', callbacks.add_anime),
                               CommandHandler('research', callbacks.research)],
                 states={
-                    1: [MessageHandler(Filters.text, callbacks.search_anime)],
+                    1: [MessageHandler(Filters.text, callbacks.search_anime),
+                        CommandHandler('research', callbacks.research)],
+                    2: [CallbackQueryHandler(callbacks.add_anime_callback)]
+                },
+                fallbacks=[CommandHandler('cancel', callbacks.cancel)],
+                allow_reentry = True,
+            ),
+
+            ConversationHandler(
+                entry_points=[CommandHandler('updateanime', callbacks.update_anime)],
+                states={
+                    1: [CallbackQueryHandler(callbacks.update_anime_callback)]
                 },
                 fallbacks=[CommandHandler('cancel', callbacks.cancel)]
             ),
 
-            CallbackQueryHandler(callbacks.callback_query_handler),
-
-            CommandHandler('updateanime', callbacks.update_anime),
+            ConversationHandler(
+                entry_points=[CommandHandler('removeanime', callbacks.remove_anime)],
+                states={
+                    1: [CallbackQueryHandler(callbacks.confirm_removal_callback)],
+                    2: [CallbackQueryHandler(callbacks.finally_remove_anime_callback)]
+                },
+                fallbacks=[CommandHandler('cancel', callbacks.cancel)],
+            ),
             CommandHandler('myanime', callbacks.get_anime_list),
             CommandHandler('updateallanime', callbacks.update_all_anime),
-            CommandHandler('removeanime', callbacks.remove_anime),
             CommandHandler('cancel', callbacks.cancel),
             ]
 
@@ -56,6 +75,14 @@ handlers += [
                 },
                 fallbacks = [CommandHandler('cancel', callbacks.cancel)]
             )
+
+             ConversationHandler(
+                entry_points=[CommandHandler('rebootserver', server_callbacks.reboot_declaration)],
+                states = {
+                    1: [MessageHandler(Filters.text, server_callbacks.reboot_server)]
+                },
+                fallbacks = [CommandHandler('cancel', callbacks.cancel)]
+            )
             ]
 
 
@@ -64,10 +91,10 @@ for handler in handlers:
 
 dispatcher.add_error_handler(callbacks.error)
 
-# Add automatic updating of users after every 3 hours
-INTERVAL =  3 * 3600
+# Add automatic updating of users after every 1 hour
+INTERVAL =  3600
 job_queue = updater.job_queue
-job_queue.run_repeating(callbacks.auto_update_user, interval=INTERVAL, first=0)
+job_queue.run_repeating(callbacks.auto_update_users, interval=INTERVAL, first=0)
 
 if __name__ == '__main__':
     initiated = False

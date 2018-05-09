@@ -94,14 +94,20 @@ def get_anime_by_id(chat_id, anime_id):
         return None
 
 
-def get_anime_subscriber_bundle():
-    animes = Anime.select()
+def get_anime_subscriber_bundle(anime_name=None):
+    # bundle = {anime_name: [anime_object, [chat_id1, chat_id2, chat_id3] ] }
     bundle = {}
+    if isinstance(anime_name, type(None)):
+        animes = Anime.select()
+    else:
+        anime = Anime.get(name=anime_name)
+        animes = [anime]
+
     for anime in animes:
-        bundle[anime.name] = [anime, []]
-        users = anime.users
-        for user in users:
-            bundle[anime.name][1].append(user.chat_id)
+            bundle[anime.name] = [anime, []]
+            users = anime.users
+            for user in users:
+                bundle[anime.name][1].append(user.chat_id)
     return bundle
 
 

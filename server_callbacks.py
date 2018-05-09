@@ -60,6 +60,33 @@ def shutdown_server(bot, update):
         update.message.reply_text("Sorry, you are not permitted to perform this action")
 
 
+# route: /rebootserver
+def reboot_declaration(bot, update):
+    update.message.reply_text("That's a very strong request. Who are you?")
+    return 1
+
+
+# Conversational Route
+# Conversational Handler Path: reboot_declaration -> reboot_server -> end
+def reboot_server(bot, update):
+    if update.message.text == AUTHORIZATION_TOKEN:
+        chat_id = update.message.chat_id
+        try:
+            bot_message = "Server is rebooting. Will be back in a bit :)"
+            signature = "\n\n ~$ Microchip Out"
+            bot_message += signature
+            bot.send_message(chat_id=chat_id, text=bot_message,
+                             parse_mode=ParseMode.MARKDOWN)
+            os.system('reboot')
+        except Exception as e:
+            print("The following exception occured when reboot command was invoked")
+            bot.send_message(chat_id=chat_id, text='Something happened and server may not reboot as expected')
+            print(e)
+
+    else:
+        update.message.reply_text("Sorry, you are not permitted to perform this action")
+
+
 # Has no route
 def startup_ip_address(bot, update):
     chat_id = update.message.chat_id
