@@ -74,15 +74,15 @@ handlers += [
                     1: [MessageHandler(Filters.text, server_callbacks.shutdown_server)]
                 },
                 fallbacks = [CommandHandler('cancel', callbacks.cancel)]
-            )
+            ),
 
-             ConversationHandler(
+            ConversationHandler(
                 entry_points=[CommandHandler('rebootserver', server_callbacks.reboot_declaration)],
                 states = {
                     1: [MessageHandler(Filters.text, server_callbacks.reboot_server)]
                 },
                 fallbacks = [CommandHandler('cancel', callbacks.cancel)]
-            )
+            ),
             ]
 
 
