@@ -6,10 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# Database stuff
 database.db
 test_database.db
+
+# Sensitive Information
 Authorizations/Authorizations.py
 Authorizations/Test_Authorizations.py
+private.key
+cert.pem
 
 # Distribution / packaging
 .Python
@@ -35,6 +40,8 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+*.pyc
+*.sh
 
 # Installer logs
 pip-log.txt

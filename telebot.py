@@ -1,32 +1,15 @@
 import os
 import time
-import argparse
 import logging
-from telegram.ext import (Updater, CommandHandler,ConversationHandler,
-                          CallbackQueryHandler, MessageHandler, Filters)
-
-
-parser = argparse.ArgumentParser(description='Simple cli app to run the bot')
-parser.add_argument('mode', type=str, 
-                    help='Mode to run bot in. Options are "dev" for development mode and ' 
-                         '"prod" for production. The difference is in the bot that is ' 
-                         'used.', 
-                    choices=['prod', 'dev'])
-parser.add_argument('method', type=str, 
-                    help='Method to use to run bot. Options are "poll" and "hook", which '
-                         'use polling and a webhook, respectively.', 
-                    choices=['poll', 'hook'])
-args = parser.parse_args()
-
-if args.mode == 'dev':
-    from Authorizations.Test_Authorizations import Credentials, MY_BOT, MY_UPDATE
-elif args.mode == 'prod':
-    from Authorizations.Authorizations import Credentials, MY_BOT, MY_UPDATE
-
-os.environ.setdefault('RUNNING_MODE', args.mode)
-
+from cli import ARGS
 import callbacks
 import server_callbacks
+from telegram.ext import (Updater, CommandHandler,ConversationHandler,
+                          CallbackQueryHandler, MessageHandler, Filters)
+if ARGS.mode == 'dev':
+    from Authorizations.Test_Authorizations import Credentials, MY_BOT, MY_UPDATE
+elif ARGS.mode == 'prod':
+    from Authorizations.Authorizations import Credentials, MY_BOT, MY_UPDATE
 
 
 # To allow logging of errors
@@ -106,6 +89,13 @@ handlers += [
                 },
                 fallbacks = [CommandHandler('cancel', callbacks.cancel)]
             ),
+            ConversationHandler(
+                entry_points=[CommandHandler('runtests', server_callbacks.manually_run_tests_declaration)],
+                states = {
+                    1: [MessageHandler(Filters.text, server_callbacks.manually_run_tests)]
+                },
+                fallbacks = [CommandHandler('cancel', callbacks.cancel)]
+            ),
             CommandHandler('logmyid', server_callbacks.log_my_chatid)
             ]
 
@@ -115,14 +105,16 @@ for handler in handlers:
 
 dispatcher.add_error_handler(callbacks.error)
 
-# Add automatic updating of users after every 1 hour
-INTERVAL =  3600
+
+UPDATE_INTERVAL =  3600 # Every hour
+TEST_INTERVAL = 3600 * 3 # Every three hours
 job_queue = updater.job_queue
-job_queue.run_repeating(callbacks.auto_update_users, interval=INTERVAL, first=0)
+job_queue.run_repeating(server_callbacks.auto_run_tests, interval=TEST_INTERVAL, first=0)
+job_queue.run_repeating(callbacks.auto_update_users, interval=UPDATE_INTERVAL, first=0)
 
 if __name__ == '__main__':
     initiated = False
-    if args.method == 'poll':
+    if ARGS.method == 'poll':
         while not initiated:
             try:
                 updater.start_polling()
@@ -133,5 +125,11 @@ if __name__ == '__main__':
                 server_callbacks.startup_failed(MY_BOT, MY_UPDATE)
                 time.sleep(20)
 
-    elif args.method == 'hook':
-        print("Webhook not developed yet")
+    elif ARGS.method == 'hook':
+        updater.start_webhook(listen='0.0.0.0',
+                              port=8443,
+                              url_path=Credentials.BOT_TOKEN,
+                              key='private.key',
+                              cert='cert.pem',
+                              webhook_url='https://www.fitiwall.com:{}/{}' \
+                                .format(Credentials.ACCESS_PORT, Credentials.BOT_TOKEN))

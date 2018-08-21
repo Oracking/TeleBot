@@ -1,13 +1,29 @@
-import socket
 import os
+import socket
+import functools
 from telegram import ParseMode
 from telegram.ext import ConversationHandler
+from test_runner import run_my_tests
 
 RUNNING_MODE = os.environ.get('RUNNING_MODE')
 if RUNNING_MODE == 'dev':
     from Authorizations.Test_Authorizations import Credentials
 if RUNNING_MODE == 'prod':
     from Authorizations.Authorizations import Credentials
+
+
+def private(original_function):
+
+    @functools.wraps(original_function)
+    def private_func(bot, update, *args, **kwargs):
+        if str(update.message.chat_id) == Credentials.MY_CHAT_ID:
+            output = original_function(bot, update, *args, **kwargs)
+            return output
+        else:
+            update.message.reply_text("You are unauthorized to make this request")
+            return ConversationHandler.END
+
+    return private_func
 
 
 def get_ip_address():
@@ -18,6 +34,7 @@ def get_ip_address():
 
 # route: /hostip
 # Conversational Handler Path: get_host_ip -> deliver_host_ip -> end
+@private
 def get_host_ip(bot, update):
     chat_id = update.message.chat_id
     update.message.reply_text("That's a strong request. I am going to have to ask you who you are")
@@ -26,6 +43,7 @@ def get_host_ip(bot, update):
 
 # Conversational Route
 # Conversational Handler Path: get_host_ip -> deliver_host_ip -> end
+@private
 def deliver_host_ip(bot, update):
     if update.message.text == Credentials.ADMIN_PASSWORD:
         chat_id = update.message.chat_id
@@ -39,6 +57,7 @@ def deliver_host_ip(bot, update):
 
 
 # route: /shutdownserver
+@private
 def shutdown_declaration(bot, update):
     update.message.reply_text("That's a very strong request. Who are you?")
     return 1
@@ -46,6 +65,7 @@ def shutdown_declaration(bot, update):
 
 # Conversational Route
 # Conversational Handler Path: shutdown_declaration -> shutdown_server -> end
+@private
 def shutdown_server(bot, update):
     if update.message.text == Credentials.ADMIN_PASSWORD:
         chat_id = update.message.chat_id
@@ -66,6 +86,7 @@ def shutdown_server(bot, update):
 
 
 # route: /rebootserver
+@private
 def reboot_declaration(bot, update):
     update.message.reply_text("That's a very strong request. Who are you?")
     return 1
@@ -73,6 +94,7 @@ def reboot_declaration(bot, update):
 
 # Conversational Route
 # Conversational Handler Path: reboot_declaration -> reboot_server -> end
+@private
 def reboot_server(bot, update):
     if update.message.text == Credentials.ADMIN_PASSWORD:
         chat_id = update.message.chat_id
@@ -121,3 +143,50 @@ def startup_failed(bot, update):
 def log_my_chatid(bot, update):
     print("\nLogging requested id: ", update.message.chat_id, "\n")
     update.message.reply_text('Your chat id has been logged' + Credentials.BOT_SIGNATURE)
+
+
+def auto_run_tests(bot, job):
+    num_passed, num_failed, errors = run_my_tests()
+    if num_failed != 0:
+        bot.send_message(chat_id=Credentials.MY_CHAT_ID, 
+                         text='Finished running scheduled tests\n\n'
+                              'Encountered Failures:\n'
+                              '{} passed and {} failed'.format(num_passed, num_failed))
+    elif errors:
+        bot.send_message(chat_id=Credentials.MY_CHAT_ID, 
+                         text='Finished running scheduled tests\n\n'
+                              'Encountered errors:\n[[{}]]'.format(errors))
+    print("\n\nDone running tests\n\n")
+
+@private
+def manually_run_tests_declaration(bot, update):
+    update.message.reply_text("That is a strong request. Who are you?")
+    return 1
+
+@private
+def manually_run_tests(bot, update):
+    if update.message.text == Credentials.ADMIN_PASSWORD:
+        bot.send_message(chat_id=update.message.chat_id, text="Approved. Beginning to run tests")
+        num_passed, num_failed, errors = run_my_tests()
+        if num_failed != 0:
+            bot.send_message(chat_id=Credentials.MY_CHAT_ID, 
+                            text='Finished running tests\n\n'
+                                 'Encountered Failures:\n'
+                                 '{} passed and {} failed'.format(num_passed, num_failed))
+        elif errors:
+            bot.send_message(chat_id=Credentials.MY_CHAT_ID, 
+                            text='Finished running tests\n\n'
+                                 'Encountered errors:\n[[{}]]'.format(errors))
+
+        else:
+            bot.send_message(chat_id=Credentials.MY_CHAT_ID, 
+                            text='Finished running tests\n\n'
+                                 'Run with no failures:\n'
+                                 '{} passed and {} failed'.format(num_passed, num_failed))
+
+    else:
+        update.message.reply_text("Sorry, you are not permitted to perform this action")
+    return ConversationHandler.END
+
+
+
