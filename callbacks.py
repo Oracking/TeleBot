@@ -100,20 +100,23 @@ def add_anime_callback(bot, update):
                                                    "list of animes you are following".format(anime_name),
                              parse_mode=ParseMode.MARKDOWN)
 
+            return ConversationHandler.END
+
         elif db_utils.anime_in_db(chat_id, anime_name):
             db_utils.subscribe_user_to_anime(chat_id, anime_name)
 
         else:
             episodes_list_url = gogo_scraper.get_episode_list_url(main_page_link)
             _, last_episode, _ = gogo_scraper.get_episode_updates(episodes_list_url)
+
             db_utils.add_new_anime(chat_id=chat_id, anime_name=anime_name, episodes_list_url=episodes_list_url,
                                    last_episode=last_episode)
 
-            bot.send_message(chat_id=chat_id, text="Alright! *{0}* has been successfully added to my database."
-                             " I will notify you when new episodes are released.".format(anime_name),
-                             parse_mode=ParseMode.MARKDOWN)
-            bot.send_message(chat_id=chat_id, text="Note: You can use /updateanime to manually check for"
-                             " updates or the current episode that's out.")
+        bot.send_message(chat_id=chat_id, text="Alright! *{0}* has been successfully added to my database."
+                            " I will notify you when new episodes are released.".format(anime_name),
+                            parse_mode=ParseMode.MARKDOWN)
+        bot.send_message(chat_id=chat_id, text="Note: You can use /updateanime to manually check for"
+                            " updates or the current episode that's out.")
 
     return ConversationHandler.END
 # ---------------------------------------------------------------------------------------------------------------------
