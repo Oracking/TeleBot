@@ -16,6 +16,9 @@ Authorizations/Test_Authorizations.py
 private.key
 cert.pem
 
+# Logs test
+logs.txt
+
 # Distribution / packaging
 .Python
 build/
