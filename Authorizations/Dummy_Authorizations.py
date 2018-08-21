@@ -13,6 +13,7 @@ class Credentials:
     BOT_TOKEN = 'bot_token' # Token for accessing bot, which can be obtained from BotFather
     MY_CHAT_ID = 'chat_id' # The chat id of the bot's conversation with admin
     ADMIN_PASSWORD = 'admin_password'
+    ACCESS_PORT = 'webhook_port' # The port to run webhook on
 
 class Message:
     '''
