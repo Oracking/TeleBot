@@ -2,7 +2,12 @@ import socket
 import os
 from telegram import ParseMode
 from telegram.ext import ConversationHandler
-from Authorizations import BOT_SIGNATURE, AUTHORIZATION_TOKEN
+
+RUNNING_MODE = os.environ.get('RUNNING_MODE')
+if RUNNING_MODE == 'dev':
+    from Authorizations.Test_Authorizations import Credentials
+if RUNNING_MODE == 'prod':
+    from Authorizations.Authorizations import Credentials
 
 
 def get_ip_address():
@@ -22,11 +27,11 @@ def get_host_ip(bot, update):
 # Conversational Route
 # Conversational Handler Path: get_host_ip -> deliver_host_ip -> end
 def deliver_host_ip(bot, update):
-    if update.message.text == AUTHORIZATION_TOKEN:
+    if update.message.text == Credentials.ADMIN_PASSWORD:
         chat_id = update.message.chat_id
         ip = get_ip_address()
         bot_message = "The back-end of this bot is running on: {0}".format(ip)
-        bot_message += BOT_SIGNATURE
+        bot_message += Credentials.BOT_SIGNATURE
         bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=ParseMode.MARKDOWN)
     else:
         update.message.reply_text("Sorry, I cannot give you what you are asking for.")
@@ -42,7 +47,7 @@ def shutdown_declaration(bot, update):
 # Conversational Route
 # Conversational Handler Path: shutdown_declaration -> shutdown_server -> end
 def shutdown_server(bot, update):
-    if update.message.text == AUTHORIZATION_TOKEN:
+    if update.message.text == Credentials.ADMIN_PASSWORD:
         chat_id = update.message.chat_id
         try:
             bot_message = "Server is shutting down :(\n Bye-bye"
@@ -69,7 +74,7 @@ def reboot_declaration(bot, update):
 # Conversational Route
 # Conversational Handler Path: reboot_declaration -> reboot_server -> end
 def reboot_server(bot, update):
-    if update.message.text == AUTHORIZATION_TOKEN:
+    if update.message.text == Credentials.ADMIN_PASSWORD:
         chat_id = update.message.chat_id
         try:
             bot_message = "Server is rebooting. Will be back in a bit :)"
@@ -93,7 +98,7 @@ def startup_ip_address(bot, update):
     ip = get_ip_address()
     bot_message = "An instance of the back-end of this bot has been" \
                   " started on a device with IP: {0}".format(ip)
-    bot_message += BOT_SIGNATURE
+    bot_message += Credentials.BOT_SIGNATURE
     bot.send_message(chat_id=chat_id, text=bot_message,
                      parse_mode = ParseMode.MARKDOWN)
 
@@ -106,8 +111,13 @@ def startup_failed(bot, update):
         bot_message = "Attempted to start an instance of the back-end of this" \
                       " bot on a device with IP: {0} but failed. Another" \
                       " attempt will be made in the next 20 seconds".format(ip)
-        bot_message += BOT_SIGNATURE
+        bot_message += Credentials.BOT_SIGNATURE
         bot.send_message(chat_id=chat_id, text=bot_message,
                          parse_mode = ParseMode.MARKDOWN)
     except:
         pass
+
+
+def log_my_chatid(bot, update):
+    print("\nLogging requested id: ", update.message.chat_id, "\n")
+    update.message.reply_text('Your chat id has been logged' + Credentials.BOT_SIGNATURE)

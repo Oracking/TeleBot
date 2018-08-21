@@ -1,16 +1,39 @@
+import os
+import time
+import argparse
+import logging
 from telegram.ext import (Updater, CommandHandler,ConversationHandler,
                           CallbackQueryHandler, MessageHandler, Filters)
+
+
+parser = argparse.ArgumentParser(description='Simple cli app to run the bot')
+parser.add_argument('mode', type=str, 
+                    help='Mode to run bot in. Options are "dev" for development mode and ' 
+                         '"prod" for production. The difference is in the bot that is ' 
+                         'used.', 
+                    choices=['prod', 'dev'])
+parser.add_argument('method', type=str, 
+                    help='Method to use to run bot. Options are "poll" and "hook", which '
+                         'use polling and a webhook, respectively.', 
+                    choices=['poll', 'hook'])
+args = parser.parse_args()
+
+if args.mode == 'dev':
+    from Authorizations.Test_Authorizations import Credentials, MY_BOT, MY_UPDATE
+elif args.mode == 'prod':
+    from Authorizations.Authorizations import Credentials, MY_BOT, MY_UPDATE
+
+os.environ.setdefault('RUNNING_MODE', args.mode)
+
 import callbacks
 import server_callbacks
-from Authorizations import BOT_TOKEN, MY_BOT, MY_UPDATE
-import time
-# import logging
+
 
 # To allow logging of errors
-# logging.basicConfig(level=logging.DEBUG,
-#                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-updater = Updater(token=BOT_TOKEN)
+updater = Updater(token=Credentials.BOT_TOKEN)
 dispatcher = updater.dispatcher
 
 
@@ -83,6 +106,7 @@ handlers += [
                 },
                 fallbacks = [CommandHandler('cancel', callbacks.cancel)]
             ),
+            CommandHandler('logmyid', server_callbacks.log_my_chatid)
             ]
 
 
@@ -98,12 +122,16 @@ job_queue.run_repeating(callbacks.auto_update_users, interval=INTERVAL, first=0)
 
 if __name__ == '__main__':
     initiated = False
-    while not initiated:
-        try:
-            updater.start_polling()
-            server_callbacks.startup_ip_address(MY_BOT, MY_UPDATE)
-            initiated = True
-        except:
-            initiated = False
-            server_callbacks.startup_failed(MY_BOT, MY_UPDATE)
-            time.sleep(20)
+    if args.method == 'poll':
+        while not initiated:
+            try:
+                updater.start_polling()
+                server_callbacks.startup_ip_address(MY_BOT, MY_UPDATE)
+                initiated = True
+            except:
+                initiated = False
+                server_callbacks.startup_failed(MY_BOT, MY_UPDATE)
+                time.sleep(20)
+
+    elif args.method == 'hook':
+        print("Webhook not developed yet")

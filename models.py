@@ -1,7 +1,19 @@
 import peewee
+import os
 
+if os.environ.get('RUNNING_MODE'):
+    RUNNING_MODE = os.environ.get('RUNNING_MODE')
+else:
+    RUNNING_MODE = input("What mode do you want to run models in (dev/prod): ")
 
-db = peewee.SqliteDatabase('database.db')
+assert RUNNING_MODE in ['dev', 'prod'], "Invalid value for running mode. Must be either of 'prod' or 'dev'."
+
+if RUNNING_MODE == 'dev':
+    database_name = 'test_database.db'
+elif RUNNING_MODE == 'prod':
+    database_name = 'database.db'
+
+db = peewee.SqliteDatabase(database_name)
 
 
 class BaseModel(peewee.Model):
@@ -22,5 +34,14 @@ class Anime(BaseModel):
 
 
 if __name__ == '__main__':
-    db.connect()
-    db.create_tables([User, Anime, Anime.users.get_through_model()])
+    print("\nYou are about to create a database file called '{0}'. This may cause an " \
+          "overwrite if it already exists".format(database_name))
+    confirmation = input("Do you wish to proceed? (y/n): ")
+
+    if confirmation.lower() == 'y':
+        db.connect()
+        db.create_tables([User, Anime, Anime.users.get_through_model()])
+    elif confirmation.lower() == "n":
+        print("Operation was cancelled.")
+    else:
+        print("Invalid response. Operation was cancelled either way")

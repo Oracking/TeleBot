@@ -6,9 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
-TelegramEnv
 database.db
-Authorizations.py
+test_database.db
+Authorizations/Authorizations.py
+Authorizations/Test_Authorizations.py
 
 # Distribution / packaging
 .Python
