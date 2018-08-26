@@ -1,8 +1,11 @@
+from collections import namedtuple
 from telegram.ext import ConversationHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 import gogo_scraper
 import db_utils, time
 
+
+Update = namedtuple('Update', ('anime_obj', 'num_new_eps', 'recent_ep', 'last_ep'))
 
 # route: /start
 def start(bot, update):
@@ -157,15 +160,17 @@ def update_anime_callback(bot, update):
             episodes_list_url, last_episode = (anime.episodes_url, anime.last_episode)
             episode_updates = gogo_scraper.get_episode_updates(episodes_list_url, last_episode)
             new_eps, recent_ep, last_ep = episode_updates
-            if recent_ep != anime.last_episode:
+
+            anime.last_episode = recent_ep
+            anime.save()
+
+            if recent_ep != last_ep:
                 bundle = db_utils.get_anime_subscriber_bundle(anime.name)
                 anime, related_chat_ids = tuple(bundle[anime.name])
                 for chat_id in related_chat_ids:
-                    send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)])
+                    send_batch_update_messages(bot, chat_id, [Update(anime, new_eps, recent_ep, last_ep)])
             else:
-                send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)])
-            anime.last_episode = recent_ep
-            anime.save()
+                send_batch_update_messages(bot, chat_id, [Update(anime, new_eps, recent_ep, last_ep)])
 
     return ConversationHandler.END
 
@@ -184,12 +189,14 @@ def update_all_anime(bot, update):
         episode_updates = gogo_scraper.get_episode_updates(anime_info[3], anime_info[2])
         new_eps, recent_ep, last_ep = episode_updates
         bundle = db_utils.get_anime_subscriber_bundle(anime_name=anime_info[0])
-        anime, related_chat_ids = tuple(bundle[anime_info[0]])
-        for chat_id in related_chat_ids:
-            send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)], send_changes_only=True)
+        anime_name, related_chat_ids = tuple(bundle[anime_info[0]])
+
         anime = db_utils.get_anime_by_id(chat_id, anime_info[1])
         anime.last_episode = recent_ep
         anime.save()
+
+        for chat_id in related_chat_ids:
+            send_batch_update_messages(bot, chat_id, [Update(anime, new_eps, recent_ep, last_ep)], send_changes_only=True)
     update.message.reply_text("Done updating. If nothing showed then you are up to date.")
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -279,30 +286,49 @@ def auto_update_users(bot, job):
         anime.last_episode = recent_ep
         anime.save()
         for chat_id in related_chat_ids:
-            send_batch_update_messages(bot, chat_id, [(anime.name, new_eps, recent_ep, last_ep)], send_changes_only=True)
+            send_batch_update_messages(bot, chat_id, [Update(anime, new_eps, recent_ep, last_ep)], send_changes_only=True)
 
 
 def send_batch_update_messages(bot, chat_id, scraping_results_batch, send_changes_only=False):
+
+    download_mesg = ''
+
     for scraping_results in scraping_results_batch:
         # scraping_results = (anime_name, num_new_eps, recent_episode, last_ep)
-        if scraping_results[1] == 0:
+        if scraping_results.num_new_eps == 0:
             bot_message = "The most recent episode of *{0}* is Episode {1}. There have been no new episodes" \
-                          " since I last checked".format(scraping_results[0], scraping_results[2])
+                          " since I last checked".format(scraping_results.anime_obj.name, 
+                                                         scraping_results.recent_ep)
         else:
-            if scraping_results[1] == 1:
+            if scraping_results.num_new_eps == 1:
                 episode = 'episode'
             else:
                 episode = 'episodes'
             bot_message = "Good news! There have been updates to *{0}*.\n\n Since I last checked, there have been" \
-                          " {1} more {2}. The most recent episode is Episode {3}".format(scraping_results[0],
-                                                                                         scraping_results[1],
+                          " {1} more {2}. The most recent episode is Episode {3}".format(scraping_results.anime_obj.name,
+                                                                                         scraping_results.num_new_eps,
                                                                                          episode,
-                                                                                         scraping_results[2])
+                                                                                         scraping_results.recent_ep)
+            episodes_list_url = scraping_results.anime_obj.episodes_url
+            try:
+                download_url, _ = gogo_scraper.get_episode_download_url(episodes_list_url)
+                download_mesg = 'You can download Episode {0} of *{1}* here:'.format(scraping_results.recent_ep,
+                                                                                     scraping_results.anime_obj.name)
+            except AssertionError:
+                download_url = None
+                download_mesg = "Sadly, I couldn't find any download url for episode {}".format(scraping_results.recent_ep)
 
-        if send_changes_only and scraping_results[1] == 0:
+        if send_changes_only and scraping_results.num_new_eps == 0:
             pass
         else:
+
             bot.send_message(chat_id=chat_id, text=bot_message, parse_mode=ParseMode.MARKDOWN)
+
+            if download_mesg:
+                bot.send_message(chat_id=chat_id, text=download_mesg, parse_mode=ParseMode.MARKDOWN)
+
+            if download_url:
+                bot.send_message(chat_id=chat_id, text=download_url)
 
         # To prevent exceeding telegram's 30 messages per second limit
         time.sleep(0.2)
