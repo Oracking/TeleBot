@@ -9,8 +9,10 @@ class Credentials:
     '''
         Data class to hold sensitive bot information
     '''
-    BOT_SIGNATURE = 'bot_signature' # Can be any string that appears at the end of messages sent to admin
-    BOT_TOKEN = 'bot_token' # Token for accessing bot, which can be obtained from BotFather
+    BOT_SIGNATURE = 'bot_signature' # Can be any string that appears at the end
+                                    # of messages sent to admin
+    BOT_TOKEN = 'bot_token' # Token for accessing bot, which can be obtained
+                            # from BotFather
     MY_CHAT_ID = 'chat_id' # The chat id of the bot's conversation with admin
     ADMIN_PASSWORD = 'admin_password'
     ACCESS_PORT = 'webhook_port' # The port to run webhook on

@@ -32,7 +32,8 @@ def nickname_user(bot, update):
         update.message.reply_text("I'm guessing you watch anime. I can help "
                                   "you keep updated on the anime you watch.")
         update.message.reply_text("Use the command /addanime to search for an "
-                                  "anime to add to my database.")
+                                  "anime to add to my database. Or /help to "
+                                  "view my list of commands")
         return ConversationHandler.END
     else:
         update.message.reply_text("I'm having trouble remembering that. "
