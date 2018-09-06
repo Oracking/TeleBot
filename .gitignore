@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Linux scripts
+botstartup.sh
+devbotstartup.sh
+
+
 # Database stuff
 database.db
 test_database.db
