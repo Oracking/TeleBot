@@ -1,7 +1,7 @@
 '''
 TODO FOR BOT:
 ==========================================================================
-- Change username of bot from telegram servers
+- Add feedback callback
 '''
 import time
 import logging

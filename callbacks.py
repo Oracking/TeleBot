@@ -250,9 +250,9 @@ def remove_anime(bot, update):
     anime_set = db_utils.get_all_anime(chat_id)
     buttons = []
     for anime_info in anime_set:
-        name, chat_id, _, _ = anime_info
+        name, anime_id, _, _ = anime_info
         button = InlineKeyboardButton(
-            text=name, callback_data="confirmremoval|||{0}".format(chat_id)
+            text=name, callback_data="confirmremoval|||{0}".format(anime_id)
         )
         buttons.append([button])
 
