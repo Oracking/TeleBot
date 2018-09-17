@@ -447,7 +447,8 @@ def send_batch_update_messages(bot, chat_id, scraping_results_batch,
                              "here:".format(scraping_results.recent_ep,
                                             scraping_results.anime_obj.name)
                             )
-        except AssertionError:
+
+        except:
             download_url = None
             download_mesg = ("Sadly, I couldn't find any download url "
                              "for episode {}".format(scraping_results.recent_ep)
